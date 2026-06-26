@@ -1,36 +1,42 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Simulateur DCA Crypto - Test Technique S'investir
 
-## Getting Started
+Ce dépôt contient le code source du simulateur DCA (Dollar Cost Averaging) Crypto, réalisé dans le cadre du test technique pour S'investir. L'objectif est de proposer une interface fidèle au design system actuel tout en assurant un code propre, modulaire et facilement intégrable.
 
-First, run the development server:
+## 🛠 Stack Technique & Partis Pris
+* **Frontend (Next.js) :** Choix naturel pour s'aligner sur la stack interne. Le simulateur est conçu comme un composant autonome, ce qui facilite son hébergement sur les environnements S'investir ou son intégration directe via iframe.
+* **Backend (Python) :** Script de traitement des données (`ingest_crypto.py`). L'utilisation de Python garantit une efficacité optimale pour la manipulation de données financières et permet une compatibilité future avec la création d'agents IA et d'automatisations avancées.
 
+## 🚀 Comment lancer le projet localement
+
+### 1. Lancement du Frontend (Interface Web)
 ```bash
+# Se rendre dans le dossier frontend
+cd frontend
+
+# Installer les dépendances
+npm install
+
+# Lancer le serveur de développement
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+# Se rendre dans le dossier backend
+cd backend
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+# Créer et activer l'environnement virtuel
+python3 -m venv venv
+source venv/bin/activate
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Lancer le script d'ingestion
+python ingest_crypto.py
 
-## Learn More
 
-To learn more about Next.js, take a look at the following resources:
+💡 Regard de partenaire : Suggestions d'amélioration
+Après avoir analysé la stack cible, voici quelques propositions d'évolution :
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Automatisation des flux de données : Connecter l'outil à une API externe (comme CoinGecko) via n8n pour récupérer les cours historiques de la crypto en temps réel, sans intervention manuelle.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Personnalisation via HubSpot : Si un utilisateur est reconnu, utiliser les intégrations pour pré-remplir automatiquement le simulateur avec des données issues de son analyse de patrimoine existante.
 
-## Deploy on Vercel
+Génération de rapports : Ajouter une fonctionnalité d'export PDF ou l'envoi d'un récapitulatif par email via HubSpot pour transformer la simulation en outil de captation de leads qualifiés.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Réalisé par Jérémy Lebrun
