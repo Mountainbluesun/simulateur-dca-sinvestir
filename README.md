@@ -32,7 +32,6 @@ source venv/bin/activate
 # Lancer le script d'ingestion
 python ingest_crypto.py
 
-
 💡 Regard de partenaire : Suggestions d'amélioration
 Après avoir analysé la stack cible, voici quelques propositions d'évolution :
 
