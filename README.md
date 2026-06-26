@@ -3,8 +3,11 @@
 Ce dépôt contient le code source du simulateur DCA (Dollar Cost Averaging) Crypto, réalisé dans le cadre du test technique pour S'investir. L'objectif est de proposer une interface fidèle au design system actuel tout en assurant un code propre, modulaire et facilement intégrable.
 
 ## 🛠 Stack Technique & Partis Pris
-* **Frontend (Next.js) :** Choix naturel pour s'aligner sur la stack interne. Le simulateur est conçu comme un composant autonome, ce qui facilite son hébergement sur les environnements S'investir ou son intégration directe via iframe.
-* **Backend (Python) :** Script de traitement des données (`ingest_crypto.py`). L'utilisation de Python garantit une efficacité optimale pour la manipulation de données financières et permet une compatibilité future avec la création d'agents IA et d'automatisations avancées.
+La stack choisie s'aligne parfaitement avec l'infrastructure interne de S'investir :
+
+* **Frontend (Next.js) :** Le simulateur est conçu comme un composant autonome, optimisé pour un déploiement Vercel. Il est facilement intégrable sur `simulateurs.sinvestir.fr` ou via iframe.
+* **Base de données / API (Supabase) :** Choix naturel pour s'intégrer directement à votre écosystème actuel et gérer les données de simulation de manière performante.
+* **Traitement des données (Python) :** Script d'ingestion (`ingest_crypto.py`). Python garantit une manipulation robuste des données financières et prépare le terrain pour de futures intégrations d'agents IA ou d'automatisations.
 
 ## 🚀 Comment lancer le projet localement
 
