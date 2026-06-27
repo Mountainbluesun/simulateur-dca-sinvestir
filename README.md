@@ -1,6 +1,8 @@
 # Simulateur DCA Crypto - Test Technique S'investir
 
 Ce dépôt contient le code source du simulateur DCA (Dollar Cost Averaging) Crypto, réalisé dans le cadre du test technique pour S'investir. L'objectif est de proposer une interface fidèle au design system actuel tout en assurant un code propre, modulaire et facilement intégrable.
+Et voici son lien en démo
+https://project-12bry.vercel.app/
 
 ## 🛠 Stack Technique & Partis Pris
 La stack choisie s'aligne parfaitement avec l'infrastructure interne de S'investir :
