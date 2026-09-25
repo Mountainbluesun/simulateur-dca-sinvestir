@@ -1,48 +1,52 @@
-# Simulateur DCA Crypto - Test Technique S'investir
+# DCA Crypto Simulator - S'investir Technical Test
 
-Ce dépôt contient le code source du simulateur DCA (Dollar Cost Averaging) Crypto, réalisé dans le cadre du test technique pour S'investir. L'objectif est de proposer une interface fidèle au design system actuel tout en assurant un code propre, modulaire et facilement intégrable.
-Et voici son lien en démo
+This repository contains the source code for the DCA (Dollar Cost Averaging) Crypto simulator, built as part of a technical test for S'investir. The goal is to deliver an interface faithful to the current design system while keeping the code clean, modular, and easy to integrate.
+Here's the live demo link:
 
 https://project-12bry.vercel.app/
 
 
-## 🛠 Stack Technique & Partis Pris
-La stack choisie s'aligne parfaitement avec l'infrastructure interne de S'investir :
+## 🛠 Tech Stack & Design Choices
+The chosen stack aligns closely with S'investir's internal infrastructure:
 
-* **Frontend (Next.js) :** Le simulateur est conçu comme un composant autonome, optimisé pour un déploiement Vercel. Il est facilement intégrable sur `simulateurs.sinvestir.fr` ou via iframe.
-* **Base de données / API (Supabase) :** Choix naturel pour s'intégrer directement à votre écosystème actuel et gérer les données de simulation de manière performante.
-* **Traitement des données (Python) :** Script d'ingestion (`ingest_crypto.py`). Python garantit une manipulation robuste des données financières et prépare le terrain pour de futures intégrations d'agents IA ou d'automatisations.
+* **Frontend (Next.js):** The simulator is built as a standalone component, optimized for Vercel deployment. It can easily be embedded on `simulateurs.sinvestir.fr` or via an iframe.
+* **Database / API (Supabase):** A natural choice to integrate directly with your current ecosystem and handle simulation data efficiently.
+* **Data processing (Python):** Ingestion script (`ingest_crypto.py`). Python ensures robust handling of financial data and lays the groundwork for future AI agent or automation integrations.
 
-## 🚀 Comment lancer le projet localement
+## 🚀 Running the project locally
 
-### 1. Lancement du Frontend (Interface Web)
+### 1. Starting the frontend (web interface)
 ```bash
-# Se rendre dans le dossier frontend
+# Go to the frontend folder
 cd frontend
 
-# Installer les dépendances
+# Install dependencies
 npm install
 
-# Lancer le serveur de développement
+# Start the development server
 npm run dev
+```
 
-# Se rendre dans le dossier backend
+### 2. Running the backend (data ingestion)
+```bash
+# Go to the backend folder
 cd backend
 
-# Créer et activer l'environnement virtuel
+# Create and activate the virtual environment
 python3 -m venv venv
 source venv/bin/activate
 
-# Lancer le script d'ingestion
+# Run the ingestion script
 python ingest_crypto.py
+```
 
-💡 Regard de partenaire : Suggestions d'amélioration
-Après avoir analysé la stack cible, voici quelques propositions d'évolution :
+## 💡 Partner's perspective: suggestions for improvement
+After analyzing the target stack, here are a few proposed enhancements:
 
-Automatisation des flux de données : Connecter l'outil à une API externe (comme CoinGecko) via n8n pour récupérer les cours historiques de la crypto en temps réel, sans intervention manuelle.
+**Data flow automation:** Connect the tool to an external API (like CoinGecko) via n8n to fetch historical crypto prices in real time, with no manual intervention.
 
-Personnalisation via HubSpot : Si un utilisateur est reconnu, utiliser les intégrations pour pré-remplir automatiquement le simulateur avec des données issues de son analyse de patrimoine existante.
+**Personalization via HubSpot:** If a user is recognized, use integrations to automatically pre-fill the simulator with data from their existing wealth analysis.
 
-Génération de rapports : Ajouter une fonctionnalité d'export PDF ou l'envoi d'un récapitulatif par email via HubSpot pour transformer la simulation en outil de captation de leads qualifiés.
+**Report generation:** Add a PDF export feature or send a summary by email via HubSpot, turning the simulation into a qualified lead-capture tool.
 
-Réalisé par Jérémy Lebrun
+Made by Jérémy Lebrun

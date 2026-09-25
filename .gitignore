@@ -65,7 +65,7 @@ next-env.d.ts
 *.pyc
 
 # =========================
-# IDE (PyCharm) et Système
+# IDE (PyCharm) and System
 # =========================
 .idea/
 /.DS_Store
