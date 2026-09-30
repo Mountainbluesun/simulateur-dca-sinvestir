@@ -1,52 +1,120 @@
-# DCA Crypto Simulator - S'investir Technical Test
+# Bitcoin DCA Simulator
 
-This repository contains the source code for the DCA (Dollar Cost Averaging) Crypto simulator, built as part of a technical test for S'investir. The goal is to deliver an interface faithful to the current design system while keeping the code clean, modular, and easy to integrate.
-Here's the live demo link:
+An interactive tool that shows how a **monthly Bitcoin dollar-cost averaging (DCA)** strategy would have performed, using real historical prices.
 
-https://project-12bry.vercel.app/
+**Live demo:** https://project-12bry.vercel.app/
+
+![Screenshot of the simulator](docs/screenshot.png)
+
+> ⚠️ **Disclaimer:** This project is for **educational purposes only** and is not financial advice. Past performance does not guarantee future results. Cryptocurrencies are highly volatile assets, and you can lose part or all of your investment. The simulation ignores fees, taxes and slippage.
+
+## Features
+
+- Choose a monthly investment amount and see the result instantly
+- Compare the total amount invested with the portfolio value over time
+-(venv) administrateur@Jeremy:~/simulateur_sinvestir$ nano backend/schema.sql 
 
 
-## 🛠 Tech Stack & Design Choices
-The chosen stack aligns closely with S'investir's internal infrastructure:
 
-* **Frontend (Next.js):** The simulator is built as a standalone component, optimized for Vercel deployment. It can easily be embedded on `simulateurs.sinvestir.fr` or via an iframe.
-* **Database / API (Supabase):** A natural choice to integrate directly with your current ecosystem and handle simulation data efficiently.
-* **Data processing (Python):** Ingestion script (`ingest_crypto.py`). Python ensures robust handling of financial data and lays the groundwork for future AI agent or automation integrations.
 
-## 🚀 Running the project locally
 
-### 1. Starting the frontend (web interface)
-```bash
-# Go to the frontend folder
-cd frontend
+(venv) administrateur@Jeremy:~/simulateur_sinvestir$ 
+(venv) administrateur@Jeremy:~/simulateur_sinvestir$ 
+(venv) administrateur@Jeremy:~/simulateur_sinvestir$  See the return on investment (green if positive, red if negative)
+- Prices stored in a database and refreshed automatically every day
 
-# Install dependencies
-npm install
+## Tech Stack
 
-# Start the development server
-npm run dev
+| Layer | Technology |
+| --- | --- |
+| Frontend | Next.js, React, Tailwind CSS, Recharts |
+| Database | Supabase (PostgreSQL) |
+| Data ingestion | Python, CoinGecko API |
+| Automation | GitHub Actions (daily cron) |
+| Hosting | Vercel |
+
+## How It Works
+
+1. A Python script fetches daily Bitcoin prices (in EUR) from CoinGecko and upserts them into Supabase.
+2. The frontend reads the prices from Supabase once, when the page loads.
+3. The DCA calculation runs entirely in the browser: on the first available day of each month, a fixed amount is invested, and the portfolio is valued at each day's price.
+
+**Good to know:** the free CoinGecko API limits the available history (365 days at the time of writing), so the simulation covers a rolling window of about one year. Because the window rarely starts on the first of a month, it can include 13 calendar months, the first and last being partial.
+
+## Project Structure
+
+```
+.
+├── backend/
+│   ├── ingest_crypto.py      # Fetches prices and upserts them into Supabase
+│   ├── requirements.txt
+│   ├── schema.sql            # Database table and security policies
+│   └── .env.example
+├── frontend/
+│   ├── src/app/              # Next.js app (page, layout, styles)
+│   └── .env.example
+└── .github/workflows/
+    └── update-prices.yml     # Daily data refresh
 ```
 
-### 2. Running the backend (data ingestion)
-```bash
-# Go to the backend folder
-cd backend
+## Getting Started
 
-# Create and activate the virtual environment
+### Prerequisites
+
+- Node.js 20+ and npm
+- Python 3.10+
+- A free [Supabase](https://supabase.com) project
+
+### 1. Set up the database
+
+In the Supabase SQL editor, run the contents of [`backend/schema.sql`](backend/schema.sql). It creates the `historical_prices` table and enables Row Level Security with a read-only public policy.
+
+### 2. Load the data (backend)
+
+```bash
+cd backend
 python3 -m venv venv
 source venv/bin/activate
+pip install -r requirements.txt
 
-# Run the ingestion script
+export SUPABASE_URL="https://your-project.supabase.co"
+export SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"
 python ingest_crypto.py
 ```
 
-## 💡 Partner's perspective: suggestions for improvement
-After analyzing the target stack, here are a few proposed enhancements:
+> 🔒 The `service_role` key bypasses Row Level Security. Use it **only** in the backend or in CI secrets. **Never** expose it in the frontend or commit it.
 
-**Data flow automation:** Connect the tool to an external API (like CoinGecko) via n8n to fetch historical crypto prices in real time, with no manual intervention.
+### 3. Run the frontend
 
-**Personalization via HubSpot:** If a user is recognized, use integrations to automatically pre-fill the simulator with data from their existing wealth analysis.
+```bash
+cd frontend
+cp .env.example .env.local   # then fill in your values
+npm install
+npm run dev
+```
 
-**Report generation:** Add a PDF export feature or send a summary by email via HubSpot, turning the simulation into a qualified lead-capture tool.
+Open http://localhost:3000. The frontend needs the project URL and the **anon** (public) key:
 
-Made by Jérémy Lebrun
+```
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+
+## Automated Data Updates
+
+The workflow in [`.github/workflows/update-prices.yml`](.github/workflows/update-prices.yml) runs `ingest_crypto.py` every day and can also be triggered manually from the **Actions** tab. Because the script upserts on `date`, it is safe to run repeatedly.
+
+To enable it in your own fork, add two repository secrets under **Settings → Secrets and variables → Actions**: `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
+
+## Roadmap
+
+- [ ] Support more cryptocurrencies and currencies
+- [ ] Configurable period and investment frequency (weekly, monthly)
+- [ ] Compare DCA with a lump-sum investment
+- [ ] Unit tests for the DCA calculation (Vitest)
+- [ ] Longer price history from an additional data source
+- [ ] Export the simulation as a PDF
+
+## Author
+
+Built by Jérémy Lebrun ([@Mountainbluesun](https://github.com/Mountainbluesun)).
