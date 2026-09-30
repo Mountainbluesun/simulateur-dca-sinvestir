@@ -1,61 +1,60 @@
+"""Fetch daily crypto prices from CoinGecko and store them in Supabase."""
+
 import os
-import requests
-from supabase import create_client, Client
+import sys
 from datetime import datetime, timezone
 
-# 1. Supabase configuration
-SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://ttqbfkbxnidwcwpfzxxt.supabase.co")
-SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+import requests
+from supabase import Client, create_client
 
-if not SUPABASE_KEY:
-    raise ValueError("Supabase key not found in environment variables.")
-
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+COINGECKO_URL = "https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart"
+TABLE_NAME = "historical_prices"
 
 
-def fetch_and_store_data():
+def get_supabase_client() -> Client:
+    """Create a Supabase client from environment variables."""
+    url = os.environ.get("SUPABASE_URL")
+    key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+    if not url or not key:
+        raise ValueError("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set.")
+    return create_client(url, key)
+
+
+def fetch_prices(coin_id: str = "bitcoin", currency: str = "eur", days: int = 365) -> list:
+    """Return raw [timestamp_ms, price] pairs from CoinGecko."""
+    response = requests.get(
+        COINGECKO_URL.format(coin_id=coin_id),
+        params={"vs_currency": currency, "days": days, "interval": "daily"},
+        headers={"User-Agent": "dca-simulator/1.0"},
+        timeout=15,
+    )
+    response.raise_for_status()  # raises an exception on 4xx/5xx errors
+    return response.json().get("prices", [])
+
+
+def to_records(prices: list) -> list[dict]:
+    """Convert raw prices to one record per date (last value wins on duplicates)."""
+    by_date = {}
+    for timestamp_ms, price in prices:
+        date = datetime.fromtimestamp(timestamp_ms / 1000, timezone.utc)
+        by_date[date.strftime("%Y-%m-%d")] = price
+    return [{"date": d, "price": p} for d, p in by_date.items()]
+
+
+def main() -> None:
+    supabase = get_supabase_client()
+
     print("Fetching data from CoinGecko...")
-    url = "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=eur&days=365&interval=daily"
+    records = to_records(fetch_prices())
 
-    # Add a User-Agent to mimic a real browser and avoid anti-bot blocking
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    }
-
-    response = requests.get(url, headers=headers)
-
-    # Show the exact error code if it still fails
-    if response.status_code != 200:
-        print(f"Connection failed. API error code: {response.status_code}")
-        print(f"Rejection detail: {response.text}")
-        return
-
-    data = response.json()
-    prices = data.get("prices", [])
-
-    records = []
-    for item in prices:
-        timestamp_ms = item[0]
-        price_eur = item[1]
-
-        # Convert the timestamp to a date
-        date_obj = datetime.fromtimestamp(timestamp_ms / 1000, timezone.utc)
-        date_str = date_obj.strftime('%Y-%m-%d')
-
-        records.append({
-            "date": date_str,
-            "price": price_eur
-        })
-
-    print(f"{len(records)} days of history fetched. Inserting into Supabase...")
-
-    # Bulk insert
-    try:
-        supabase.table("historical_prices").insert(records).execute()
-        print("Success! The database is ready.")
-    except Exception as e:
-        print(f"Error inserting into Supabase: {e}")
+    print(f"{len(records)} days of history fetched. Upserting into Supabase...")
+    supabase.table(TABLE_NAME).upsert(records, on_conflict="date").execute()
+    print("Done.")
 
 
 if __name__ == "__main__":
-    fetch_and_store_data()
+    try:
+        main()
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)  # non-zero exit code so schedulers/CI detect the failure
