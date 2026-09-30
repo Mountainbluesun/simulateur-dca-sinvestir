@@ -1,104 +1,111 @@
-"use client"; // Tells Next.js that this page uses client-side interactivity
+"use client"; // Required by Next.js: this page uses client-side state and effects
 
-import { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { useState, useEffect, useMemo } from "react";
+import { createClient } from "@supabase/supabase-js";
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+} from "recharts";
 
-// Supabase configuration
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
+
+const formatEur = new Intl.NumberFormat("en-IE", {
+  style: "currency",
+  currency: "EUR",
+  maximumFractionDigits: 2,
+});
+
+/**
+ * Pure DCA calculation: invests a fixed amount on the first available
+ * day of each month and tracks the portfolio value day by day.
+ */
+function calculateDCA(prices, amountPerMonth) {
+  let totalInvested = 0;
+  let btcOwned = 0;
+  let currentMonth = "";
+  const series = [];
+
+  for (const day of prices) {
+    const month = day.date.substring(0, 7); // "YYYY-MM"
+
+    if (month !== currentMonth) {
+      totalInvested += amountPerMonth;
+      btcOwned += amountPerMonth / day.price;
+      currentMonth = month;
+    }
+
+    series.push({
+      date: day.date,
+      Invested: Number(totalInvested.toFixed(2)),
+      Portfolio: Number((btcOwned * day.price).toFixed(2)),
+    });
+  }
+  return series;
+}
 
 export default function Simulator() {
+  const [prices, setPrices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [monthlyInvestment, setMonthlyInvestment] = useState(100);
-  const [chartData, setChartData] = useState([]);
-  const [summary, setSummary] = useState({ totalInvested: 0, currentValue: 0, roi: 0 });
 
-  // Fetch the data when the page loads
+  // Fetch prices once, when the page loads
   useEffect(() => {
-    async function fetchData() {
+    async function fetchPrices() {
       const { data, error } = await supabase
-        .from('historical_prices')
-        .select('*')
-        .order('date', { ascending: true }); // Sort from oldest to most recent
+        .from("historical_prices")
+        .select("date, price")
+        .order("date", { ascending: true }); // oldest to most recent
 
       if (error) {
         console.error("Supabase error:", error);
-        setLoading(false);
-        return;
+        setError("Could not load price data. Please try again later.");
+      } else {
+        setPrices(data);
       }
-
-      calculateDCA(data, monthlyInvestment);
       setLoading(false);
     }
-    fetchData();
-  }, []); // Runs once on mount
+    fetchPrices();
+  }, []);
 
-  // Recompute the chart whenever the user changes the amount
-  const handleInvestmentChange = async (e) => {
-    const amount = Number(e.target.value);
-    setMonthlyInvestment(amount);
+  // Recomputed locally whenever prices or the amount change (no extra request)
+  const chartData = useMemo(
+    () => calculateDCA(prices, monthlyInvestment),
+    [prices, monthlyInvestment]
+  );
 
-    // Rerun the calculation with the data already cached in the database
-    const { data } = await supabase.from('historical_prices').select('*').order('date', { ascending: true });
-    if(data) calculateDCA(data, amount);
-  };
-
-  // The heart of the test: the DCA math logic
-  const calculateDCA = (historicalPrices, amountPerMonth) => {
-    let totalFiatInvested = 0;
-    let totalBtcOwned = 0;
-    let currentMonth = "";
-    const simulationData = [];
-
-    historicalPrices.forEach((day) => {
-      const dayMonth = day.date.substring(0, 7); // Extract "YYYY-MM"
-
-      // Invest once a month (as soon as a new month is detected in the history)
-      if (dayMonth !== currentMonth) {
-        totalFiatInvested += amountPerMonth;
-        totalBtcOwned += (amountPerMonth / day.price);
-        currentMonth = dayMonth;
-      }
-
-      // Compute the portfolio value for that day
-      const portfolioValue = totalBtcOwned * day.price;
-
-      simulationData.push({
-        date: day.date,
-        Invested: parseFloat(totalFiatInvested.toFixed(2)),
-        Portfolio: parseFloat(portfolioValue.toFixed(2)),
-      });
-    });
-
-    setChartData(simulationData);
-
-    // Update the summary at the top of the page
-    if (simulationData.length > 0) {
-      const finalState = simulationData[simulationData.length - 1];
-      const roi = ((finalState.Portfolio - finalState.Invested) / finalState.Invested) * 100;
-
-      setSummary({
-        totalInvested: finalState.Invested,
-        currentValue: finalState.Portfolio,
-        roi: roi.toFixed(2)
-      });
+  const summary = useMemo(() => {
+    const last = chartData[chartData.length - 1];
+    if (!last || last.Invested === 0) {
+      return { totalInvested: 0, currentValue: 0, roi: 0 };
     }
+    return {
+      totalInvested: last.Invested,
+      currentValue: last.Portfolio,
+      roi: ((last.Portfolio - last.Invested) / last.Invested) * 100,
+    };
+  }, [chartData]);
+
+  const handleInvestmentChange = (e) => {
+    const amount = Number(e.target.value);
+    setMonthlyInvestment(Number.isFinite(amount) && amount >= 0 ? amount : 0);
   };
 
   return (
     <main className="min-h-screen bg-gray-50 p-8 text-gray-800">
       <div className="max-w-5xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8 text-blue-900">S'investir Investment Simulator</h1>
+        <h1 className="text-3xl font-bold mb-8 text-blue-900">Bitcoin DCA Simulator</h1>
 
         {/* Configuration panel and summary */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="monthly" className="block text-sm font-medium text-gray-700 mb-2">
               Monthly investment (€)
             </label>
             <input
+              id="monthly"
               type="number"
               value={monthlyInvestment}
               onChange={handleInvestmentChange}
@@ -110,15 +117,15 @@ export default function Simulator() {
 
           <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
             <h3 className="text-sm font-medium text-gray-500">Total Invested</h3>
-            <p className="text-2xl font-bold">{summary.totalInvested} €</p>
+            <p className="text-2xl font-bold">{formatEur.format(summary.totalInvested)}</p>
           </div>
 
           <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
             <h3 className="text-sm font-medium text-gray-500">Current Value (Bitcoin)</h3>
-            <p className={`text-2xl font-bold ${summary.roi >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {summary.currentValue} €
+            <p className={`text-2xl font-bold ${summary.roi >= 0 ? "text-green-600" : "text-red-600"}`}>
+              {formatEur.format(summary.currentValue)}
               <span className="text-sm ml-2 font-normal">
-                ({summary.roi >= 0 ? '+' : ''}{summary.roi}%)
+                ({summary.roi >= 0 ? "+" : ""}{summary.roi.toFixed(2)}%)
               </span>
             </p>
           </div>
@@ -128,18 +135,20 @@ export default function Simulator() {
         <div className="bg-white p-6 rounded-lg shadow border border-gray-200 h-[500px]">
           {loading ? (
             <div className="flex items-center justify-center h-full">Calculating...</div>
+          ) : error ? (
+            <div className="flex items-center justify-center h-full text-red-600">{error}</div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis
                   dataKey="date"
-                  tickFormatter={(tick) => tick.substring(5, 10)}
+                  tickFormatter={(tick) => tick.substring(0, 7)} // "YYYY-MM"
                   minTickGap={30}
                 />
                 <YAxis unit="€" width={80} />
                 <Tooltip
-                  formatter={(value) => [`${value} €`]}
+                  formatter={(value) => [formatEur.format(value)]}
                   labelFormatter={(label) => `Date: ${label}`}
                 />
                 <Legend />
@@ -149,6 +158,11 @@ export default function Simulator() {
             </ResponsiveContainer>
           )}
         </div>
+
+        <p className="mt-6 text-sm text-gray-500">
+          For educational purposes only. Past performance does not guarantee future results.
+          Cryptocurrencies are highly volatile assets.
+        </p>
       </div>
     </main>
   );
