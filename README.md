@@ -39,7 +39,7 @@ An interactive tool that shows how a **monthly Bitcoin dollar-cost averaging (DC
 2. The frontend reads the prices from Supabase once, when the page loads.
 3. The DCA calculation runs entirely in the browser: on the first available day of each month, a fixed amount is invested, and the portfolio is valued at each day's price.
 
-**Good to know:** the free CoinGecko API limits the available history (365 days at the time of writing), so the simulation covers a rolling window of about one year. Because the window rarely starts on the first of a month, it can include 13 calendar months, the first and last being partial.
+**Good to know:** the free CoinGecko API only returns the last 365 days, but the daily job upserts each day into Supabase without deleting older rows, so the history grows over time. The simulation starts on the first day stored in the database, which is rarely the first of a month, so the first and last months are partial.
 
 ## Project Structure
 
